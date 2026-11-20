@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AETHER // WALLS — Next-Gen Wallpaper Gallery</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Configuration for Custom Fonts & Colors -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#09090b',
+            surface: '#121216',
+            elevated: '#18181f',
+            accentViolet: '#8b5cf6',
+            accentCyan: '#06b6d4',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ==========================================================================
+       CSS Custom Properties & Base Theme Tokens
+       ========================================================================== */
+    :root {
+      --bg-obsidian: #09090b;
+      --bg-surface: #121216;
+      --glass-bg: rgba(18, 18, 22, 0.72);
+      --glass-card: rgba(24, 24, 31, 0.55);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(139, 92, 246, 0.45);
+      --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+      --text-primary: #f4f4f5;
+      --text-muted: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-obsidian);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Ambient Background Glow Orbs */
+    .ambient-glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(130px);
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Hide Horizontal Scrollbar for Category Pill Strip */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Glassmorphism Utilities */
+    .glass-panel {
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .glass-pill {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-pill:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .glass-pill.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.25));
+      border-color: rgba(139, 92, 246, 0.6);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Responsive CSS Masonry Column Layout */
+    .masonry-grid {
+      column-count: 1;
+      column-gap: 1.25rem;
+    }
+    @media (min-width: 640px) {
+      .masonry-grid { column-count: 2; }
+    }
+    @media (min-width: 1024px) {
+      .masonry-grid { column-count: 3; }
+    }
+    @media (min-width: 1440px) {
+      .masonry-grid { column-count: 4; }
+    }
+
+    .masonry-item {
+      break-inside: avoid;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Staggered Card Entrance Keyframes */
+    @keyframes cardEntrance {
+      0% {
+        opacity: 0;
+        transform: translateY(22px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-card-in {
+      opacity: 0;
+      animation: cardEntrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Wallpaper Card Micro-Interactions */
+    .wall-card {
+      position: relative;
+      border-radius: 1rem;
+      overflow: hidden;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.35s ease,
+                  box-shadow 0.35s ease;
+      cursor: pointer;
+    }
+
+    .wall-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139, 92, 246, 0.45);
+      box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.15);
+    }
+
+    .wall-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+    }
+
+    .wall-card:hover img {
+      transform: scale(1.06);
+    }
+
+    /* Slide-Up Glass Overlay on Card Hover */
+    .wall-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(9, 9, 11, 0.92) 0%,
+        rgba(9, 9, 11, 0.45) 45%,
+        rgba(9, 9, 11, 0.05) 100%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+    }
+
+    .wall-card:hover .wall-overlay,
+    .wall-card:focus-within .wall-overlay {
+      opacity: 1;
+    }
+
+    .wall-overlay-bottom {
+      transform: translateY(12px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .wall-card:hover .wall-overlay-bottom {
+      transform: translateY(0);
+    }
+
+    /* Touch device support: always show subtle bottom info on mobile */
+    @media (hover: none) {
+      .wall-overlay {
+        opacity: 1;
+        background: linear-gradient(to top, rgba(9, 9, 11, 0.88) 0%, transparent 55%);
+      }
+      .wall-overlay-bottom {
+        transform: translateY(0);
+      }
+    }
+
+    /* Heart Pulse Animation */
+    @keyframes heartPop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    .heart-pop {
+      animation: heartPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Lightbox Modal Transitions */
+    .modal-backdrop {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-container {
+      transform: scale(0.95) translateY(12px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-backdrop.open .modal-container {
+      transform: scale(1) translateY(0);
+    }
+
+    /* Device Mockup Frames inside Lightbox */
+    .mockup-desktop {
+      width: 100%;
+      max-width: 780px;
+      aspect-ratio: 16 / 9;
+      border-radius: 14px;
+      border: 8px solid #1e1e26;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.12);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .mockup-mobile {
+      width: 295px;
+      height: 590px;
+      border-radius: 42px;
+      border: 9px solid #1e1e26;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Color Swatch Dot Ring */
+    .swatch-dot {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .swatch-dot:hover {
+      transform: scale(1.18);
+    }
+    .swatch-dot.active {
+      transform: scale(1.22);
+      box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #ffffff;
+    }
+
+    /* Footer Made With Love Styling */
+    .made-with-love {
+      font-family: system-ui, sans-serif;
+      font-size: 1rem;
+      color: #a1a1aa;
+      letter-spacing: 0.01em;
+    }
+
+    .heart {
+      color: #e25555;
+      display: inline-block;
+      animation: subtleHeartBeat 2.2s ease-in-out infinite;
+    }
+
+    @keyframes subtleHeartBeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.22); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.16); }
+      70% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-violet-500/30 selection:text-violet-200">
+
+  <!-- Ambient Gradient Orbs -->
+  <div class="ambient-glow w-[500px] h-[500px] bg-violet-600 -top-48 -left-32"></div>
+  <div class="ambient-glow w-[450px] h-[450px] bg-cyan-500 top-1/3 -right-40"></div>
+
+  <!-- ========================================================================
+       1. GLASSMORPHIC STICKY HEADER
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/[0.08]">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3 py-3.5">
+        
+        <!-- Brand Logo -->
+        <a href="#" id="resetAllBrand" class="flex items-center gap-3 group focus:outline-none">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 p-[1px] shadow-lg shadow-violet-500/20 group-hover:shadow-violet-500/40 transition-shadow">
+            <div class="w-full h-full bg-obsidian rounded-[11px] flex items-center justify-center">
+              <svg class="w-5 h-5 text-transparent bg-clip-text" viewBox="0 0 24 24" fill="none" stroke="url(#logoGrad)" stroke-width="2.2">
+                <defs>
+                  <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#a78bfa" />
+                    <stop offset="100%" stop-color="#22d3ee" />
+                  </linearGradient>
+                </defs>
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-extrabold tracking-tight text-base sm:text-lg leading-none text-white">
+              AETHER <span class="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent font-mono font-semibold">// WALLS</span>
+            </span>
+            <span class="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mt-0.5">4K • 8K Curated Studio</span>
+          </div>
+        </a>
+
+        <!-- Live Real-Time Search Bar -->
+        <div class="order-3 md:order-2 w-full md:w-auto md:flex-1 md:max-w-md lg:max-w-lg">
+          <div class="relative group">
+            <svg class="w-4 h-4 text-zinc-400 group-focus-within:text-violet-400 transition-colors absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+            <input 
+              type="text" 
+              id="searchInput"
+              placeholder="Search wallpapers, tags, colors (e.g. neon, 4K, Tokyo)..." 
+              class="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] text-sm text-white placeholder-zinc-500 pl-10 pr-16 py-2.5 rounded-xl border border-white/[0.08] focus:border-violet-500/60 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+            />
+            <button id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 hover:bg-white/20 transition">
+              ESC
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Controls: Aspect Ratio Toggle & Favorites Filter -->
+        <div class="order-2 md:order-3 flex items-center gap-2 sm:gap-3">
+          <!-- Aspect Ratio / Device Filter Segmented Control -->
+          <div id="aspectFilterGroup" class="hidden sm:flex items-center bg-white/[0.03] p-1 rounded-xl border border-white/[0.07]">
+            <button data-aspect="all" class="aspect-btn active px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-white/10 text-white shadow-sm">
+              All
+            </button>
+            <button data-aspect="desktop" class="aspect-btn px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition-all flex items-center gap-1.5" title="Desktop 16:9">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" stroke-width="2"/><path d="M8 21h8M12 17v4" stroke-width="2"/></svg>
+              <span>16:9</span>
+            </button>
+            <button data-aspect="mobile" class="aspect-btn px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition-all flex items-center gap-1.5" title="Mobile 9:16">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" stroke-width="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2"/></svg>
+              <span>9:16</span>
+            </button>
+            <button data-aspect="ultrawide" class="aspect-btn px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition-all flex items-center gap-1.5" title="Ultrawide 21:9">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="6" width="22" height="12" rx="2" stroke-width="2"/></svg>
+              <span>21:9</span>
+            </button>
+          </div>
+
+          <!-- Mobile Aspect Selector Dropdown (visible only on extra small screens) -->
+          <select id="mobileAspectSelect" aria-label="Device Aspect Ratio" class="sm:hidden bg-white/[0.05] text-xs text-zinc-200 rounded-xl px-2.5 py-2 border border-white/[0.08] focus:outline-none">
+            <option value="all" class="bg-obsidian">All Ratios</option>
+            <option value="desktop" class="bg-obsidian">Desktop 16:9</option>
+            <option value="mobile" class="bg-obsidian">Mobile 9:16</option>
+            <option value="ultrawide" class="bg-obsidian">Ultrawide 21:9</option>
+          </select>
+
+          <!-- Favorites Filter Toggle Button -->
+          <button id="favoritesToggleBtn" class="glass-pill px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-medium text-zinc-200 relative group">
+            <svg id="headerHeartIcon" class="w-4 h-4 text-rose-400 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span class="hidden sm:inline">Saved</span>
+            <span id="favCountBadge" class="font-mono text-[11px] px-1.5 py-0.2 rounded-full bg-violet-500/25 text-violet-300 border border-violet-500/30">0</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       2. INTERACTIVE CATEGORY & COLOR PALETTE FILTER BAR
+       ======================================================================== -->
+  <section class="border-b border-white/[0.06] bg-obsidian/60 backdrop-blur-md sticky top-[113px] md:top-[69px] z-30">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      
+      <!-- Horizontal Scrollable Category Pills -->
+      <div id="categoryBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <button data-category="All" class="cat-pill glass-pill active px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap">
+          All Drops
+        </button>
+        <button data-category="Cyberpunk" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Cyberpunk
+        </button>
+        <button data-category="Minimal" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Minimal
+        </button>
+        <button data-category="Nature" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Nature
+        </button>
+        <button data-category="Abstract 3D" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Abstract 3D
+        </button>
+        <button data-category="Automotive" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Automotive
+        </button>
+        <button data-category="Space" class="cat-pill glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 whitespace-nowrap">
+          Space
+        </button>
+      </div>
+
+      <!-- Dominant Color Swatch Filter Dots & Stats -->
+      <div class="flex items-center justify-between lg:justify-end gap-4 border-t lg:border-t-0 border-white/[0.05] pt-2 lg:pt-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-zinc-500">Tone:</span>
+          <div id="colorFilterBar" class="flex items-center gap-2">
+            <button data-color="all" title="All Colors" class="swatch-dot active w-5 h-5 rounded-full bg-gradient-to-tr from-violet-500 via-cyan-400 to-amber-400 border border-white/20"></button>
+            <button data-color="purple" title="Neon Purple" class="swatch-dot w-5 h-5 rounded-full bg-[#8b5cf6] border border-white/20"></button>
+            <button data-color="blue" title="Deep Cyan / Blue" class="swatch-dot w-5 h-5 rounded-full bg-[#0284c7] border border-white/20"></button>
+            <button data-color="emerald" title="Emerald / Teal" class="swatch-dot w-5 h-5 rounded-full bg-[#10b981] border border-white/20"></button>
+            <button data-color="orange" title="Sunset Orange / Amber" class="swatch-dot w-5 h-5 rounded-full bg-[#f97316] border border-white/20"></button>
+            <button data-color="mono" title="Obsidian Monochrome" class="swatch-dot w-5 h-5 rounded-full bg-[#3f3f46] border border-white/30"></button>
+          </div>
+        </div>
+
+        <div class="h-4 w-[1px] bg-white/10 hidden sm:block"></div>
+
+        <div class="text-xs font-mono text-zinc-400">
+          Showing <span id="resultCount" class="text-white font-semibold">0</span> walls
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       3. RESPONSIVE MASONRY WALLPAPER GALLERY GRID
+       ======================================================================== -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    
+    <!-- Active Filter Banner (shown when filtering by Favorites or specific tags) -->
+    <div id="activeFilterBanner" class="hidden mb-6 glass-panel rounded-2xl px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5 text-xs sm:text-sm">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span id="activeFilterText" class="text-zinc-300">Viewing Saved Wallpapers</span>
+      </div>
+      <button id="clearAllFiltersBtn" class="text-xs font-mono text-violet-400 hover:text-violet-300 underline underline-offset-4">
+        Reset Filters
+      </button>
+    </div>
+
+    <!-- Masonry Container -->
+    <div id="wallpaperGrid" class="masonry-grid">
+      <!-- Dynamically populated by JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-24 text-center max-w-md mx-auto">
+      <div class="w-16 h-16 rounded-2xl glass-panel mx-auto flex items-center justify-center mb-4 text-zinc-500">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-white mb-1">No wallpapers match your vibe</h3>
+      <p class="text-sm text-zinc-400 mb-5">Try clearing your search query, switching aspect ratios, or selecting another color tone.</p>
+      <button id="emptyResetBtn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white text-sm font-medium shadow-lg shadow-violet-500/25 hover:opacity-95 transition">
+        Show All Wallpapers
+      </button>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       GLASSMORPHIC FOOTER
+       ======================================================================== -->
+  <footer class="mt-10 border-t border-white/[0.08] glass-panel">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      <div class="flex items-center gap-2 text-xs font-mono text-zinc-500">
+        <span class="w-2 h-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-400"></span>
+        <span>AETHER // WALLS — 4K Curated Wallpaper Gallery</span>
+      </div>
+      <p class="made-with-love">Made with <span class="heart" aria-label="love">&#10084;</span> By ImJeetRS.</p>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       4. FULL-SCREEN GLASSMORPHIC LIGHTBOX & DEVICE MOCKUP PREVIEW MODAL
+       ======================================================================== -->
+  <div id="lightboxModal" class="modal-backdrop fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="modal-container glass-panel w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl border border-white/15 flex flex-col lg:flex-row max-h-[94vh]">
+      
+      <!-- Left / Top Stage: Wallpaper & Interactive Device Mockup Canvas -->
+      <div class="relative flex-1 bg-[#060608] flex flex-col justify-between p-4 sm:p-6 min-h-[340px] lg:min-h-[620px] overflow-hidden select-none">
+        
+        <!-- Top Stage Controls: Device Mockup Toggle & Close -->
+        <div class="flex items-center justify-between gap-2 z-20">
+          <!-- Device Mockup Switcher -->
+          <div class="glass-panel p-1 rounded-xl flex items-center gap-1">
+            <button data-mockup="clean" class="mockup-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-white/15 text-white transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+              <span>Clean View</span>
+            </button>
+            <button data-mockup="desktop" class="mockup-btn px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" stroke-width="2"/><path d="M8 21h8M12 17v4" stroke-width="2"/></svg>
+              <span>Desktop</span>
+            </button>
+            <button data-mockup="mobile" class="mockup-btn px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" stroke-width="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2"/></svg>
+              <span>Phone Lock</span>
+            </button>
+          </div>
+
+          <!-- Mobile Close Button -->
+          <button id="closeModalMobile" class="lg:hidden w-9 h-9 rounded-xl glass-panel flex items-center justify-center text-zinc-300 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Center Preview Stage -->
+        <div class="flex-1 flex items-center justify-center my-4 relative">
+          
+          <!-- Prev / Next Keyboard & Click Navigation Arrows -->
+          <button id="prevWallBtn" title="Previous (Left Arrow)" class="absolute left-0 sm:left-2 z-20 w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button id="nextWallBtn" title="Next (Right Arrow)" class="absolute right-0 sm:right-2 z-20 w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- Dynamic Preview Wrapper -->
+          <div id="previewStageContainer" class="relative flex items-center justify-center w-full h-full">
+            
+            <!-- Image Element -->
+            <div id="previewFrame" class="relative flex items-center justify-center transition-all duration-300">
+              <img id="modalImage" src="" alt="Wallpaper Preview" class="max-h-[58vh] w-auto object-contain rounded-xl shadow-2xl transition-all duration-300" />
+              
+              <!-- Desktop OS Taskbar Overlay (Visible in Desktop Mockup Mode) -->
+              <div id="desktopOverlay" class="hidden absolute inset-x-0 bottom-0 h-9 bg-black/55 backdrop-blur-md border-t border-white/15 px-4 flex items-center justify-between text-[11px] text-white/90">
+                <div class="flex items-center gap-3">
+                  <span class="w-3.5 h-3.5 rounded-sm bg-gradient-to-tr from-violet-500 to-cyan-400 inline-block"></span>
+                  <span class="font-medium tracking-wide">AetherOS</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-md">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  <span class="w-2 h-2 rounded-full bg-violet-400"></span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </div>
+                <div id="desktopClock" class="font-mono text-[10px] text-zinc-300">15:23</div>
+              </div>
+
+              <!-- Smartphone Lockscreen Overlay (Visible in Phone Lock Mode) -->
+              <div id="mobileOverlay" class="hidden absolute inset-0 flex flex-col justify-between p-6 bg-gradient-to-b from-black/35 via-transparent to-black/45 pointer-events-none">
+                <!-- Dynamic Island Notch -->
+                <div class="w-24 h-5 bg-black rounded-full mx-auto border border-white/10"></div>
+                
+                <!-- Live Lockscreen Clock -->
+                <div class="text-center -mt-20">
+                  <div id="phoneDate" class="text-xs font-medium tracking-widest uppercase text-white/85 drop-shadow">Friday, Nov 20</div>
+                  <div id="phoneClock" class="text-5xl font-bold tracking-tight text-white drop-shadow-lg mt-1 font-sans">15:23</div>
+                </div>
+
+                <!-- Bottom Lockscreen Quick Actions -->
+                <div class="flex items-center justify-between px-2">
+                  <div class="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md border border-white/15 flex items-center justify-center text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  </div>
+                  <div class="w-24 h-1 rounded-full bg-white/70"></div>
+                  <div class="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md border border-white/15 flex items-center justify-center text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom Keyboard Shortcut Hint -->
+        <div class="hidden sm:flex items-center justify-center gap-4 text-[11px] font-mono text-zinc-500">
+          <span><kbd class="px-1.5 py-0.5 bg-white/5 rounded border border-white/10 text-zinc-400">←</kbd> <kbd class="px-1.5 py-0.5 bg-white/5 rounded border border-white/10 text-zinc-400">→</kbd> Navigate</span>
+          <span><kbd class="px-1.5 py-0.5 bg-white/5 rounded border border-white/10 text-zinc-400">ESC</kbd> Close</span>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Wallpaper Metadata, Palette & Download Controls -->
+      <div class="w-full lg:w-[370px] bg-surface/95 border-t lg:border-t-0 lg:border-l border-white/10 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
+        <div>
+          <!-- Top Header & Desktop Close -->
+          <div class="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <span id="modalCategoryBadge" class="inline-block text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 mb-2">
+                Cyberpunk
+              </span>
+              <h2 id="modalTitle" class="text-xl font-bold text-white leading-snug">Neon Rain Shinjuku</h2>
+              <p class="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
+                <span>Curated by</span>
+                <span id="modalAuthor" class="text-zinc-200 font-medium">@kuro_visuals</span>
+              </p>
+            </div>
+            <button id="closeModalDesktop" class="hidden lg:flex w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 items-center justify-center text-zinc-400 hover:text-white transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Specs Grid -->
+          <div class="grid grid-cols-3 gap-2 my-5">
+            <div class="bg-white/[0.03] border border-white/[0.07] rounded-xl p-2.5">
+              <div class="text-[10px] font-mono uppercase text-zinc-500">Resolution</div>
+              <div id="modalResolution" class="text-xs font-mono font-semibold text-white mt-0.5">3840×2160</div>
+            </div>
+            <div class="bg-white/[0.03] border border-white/[0.07] rounded-xl p-2.5">
+              <div class="text-[10px] font-mono uppercase text-zinc-500">Ratio</div>
+              <div id="modalRatio" class="text-xs font-mono font-semibold text-cyan-300 mt-0.5">16:9 UHD</div>
+            </div>
+            <div class="bg-white/[0.03] border border-white/[0.07] rounded-xl p-2.5">
+              <div class="text-[10px] font-mono uppercase text-zinc-500">File Size</div>
+              <div id="modalSize" class="text-xs font-mono font-semibold text-white mt-0.5">8.4 MB</div>
+            </div>
+          </div>
+
+          <!-- Clickable Dominant Color Palette -->
+          <div class="mb-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-zinc-300">Extracted Color Palette</span>
+              <span class="text-[10px] font-mono text-zinc-500">Click hex to copy</span>
+            </div>
+            <div id="modalPalette" class="grid grid-cols-4 gap-2">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="mb-6">
+            <span class="text-xs font-medium text-zinc-300 block mb-2">Tags</span>
+            <div id="modalTags" class="flex flex-wrap gap-1.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Action Controls: Resolution Selector + Download + Save -->
+        <div class="space-y-3 pt-4 border-t border-white/10">
+          <div>
+            <label for="resolutionSelect" class="block text-[11px] font-mono uppercase text-zinc-400 mb-1.5">Select Output Resolution</label>
+            <select id="resolutionSelect" class="w-full bg-white/[0.05] hover:bg-white/[0.08] text-xs sm:text-sm font-mono text-white rounded-xl px-3.5 py-2.5 border border-white/15 focus:outline-none focus:border-violet-500 transition">
+              <option value="original" class="bg-obsidian">Original Master — 4K UHD (3840×2160)</option>
+              <option value="qhd" class="bg-obsidian">QHD Desktop — 2K (2560×1440)</option>
+              <option value="mobile" class="bg-obsidian">Mobile Portrait Crop — (1440×3120)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <!-- Primary Download Button -->
+            <button id="modalDownloadBtn" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+              <svg id="downloadIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span id="downloadBtnText">Download Wallpaper</span>
+            </button>
+
+            <!-- Modal Favorite Button -->
+            <button id="modalFavBtn" aria-label="Save to Favorites" class="w-12 h-11 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/15 flex items-center justify-center text-zinc-300 transition">
+              <svg id="modalHeartSvg" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       5. TOAST NOTIFICATION CONTAINER
+       ======================================================================== -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ========================================================================
+       MODULAR APPLICATION JAVASCRIPT
+       ======================================================================== -->
+  <script>
+    /**
+     * 1. CURATED WALLPAPER DATASET
+     * Structured cleanly so it can be replaced with a REST/GraphQL API endpoint later.
+     */
+    const WALLPAPERS_DATA = [
+      {
+        id: 'wall-01',
+        title: 'Shinjuku Cyber Rain',
+        author: '@kuro_visuals',
+        category: 'Cyberpunk',
+        aspectType: 'desktop',
+        aspectLabel: '16:9 UHD',
+        resolution: '3840×2160',
+        badge: '4K UHD',
+        fileSize: '9.2 MB',
+        dominantTone: 'purple',
+        palette: ['#8b5cf6', '#ec4899', '#06b6d4', '#09090b'],
+        tags: ['neon', 'tokyo', 'cyberpunk', 'night', 'rain'],
+        thumbUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2400&q=90'
+      },
+      {
+        id: 'wall-02',
+        title: 'Ethereal Violet Spire',
+        author: '@aura_renders',
+        category: 'Abstract 3D',
+        aspectType: 'mobile',
+        aspectLabel: '9:16 OLED',
+        resolution: '2160×3840',
+        badge: 'MOBILE 4K',
+        fileSize: '6.8 MB',
+        dominantTone: 'purple',
+        palette: ['#7c3aed', '#c084fc', '#1e1b4b', '#0f172a'],
+        tags: ['3d', 'abstract', 'oled', 'gradient', 'minimal'],
+        thumbUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1800&q=90'
+      },
+      {
+        id: 'wall-03',
+        title: 'Andromeda Dust Nebula',
+        author: '@astro_lens',
+        category: 'Space',
+        aspectType: 'ultrawide',
+        aspectLabel: '21:9 UWQHD',
+        resolution: '5120×2160',
+        badge: '5K ULTRAWIDE',
+        fileSize: '14.1 MB',
+        dominantTone: 'blue',
+        palette: ['#0284c7', '#6366f1', '#f472b6', '#050509'],
+        tags: ['galaxy', 'nebula', 'cosmos', 'stars', 'ultrawide'],
+        thumbUrl: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1000&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=2600&q=90'
+      },
+      {
+        id: 'wall-04',
+        title: 'Nordic Aurora Fjord',
+        author: '@soren_nord',
+        category: 'Nature',
+        aspectType: 'desktop',
+        aspectLabel: '16:9 UHD',
+        resolution: '3840×2160',
+        badge: '4K UHD',
+        fileSize: '8.7 MB',
+        dominantTone: 'emerald',
+        palette: ['#10b981', '#06b6d4', '#064e3b', '#090d16'],
+        tags: ['aurora', 'northern lights', 'norway', 'mountains', 'nature'],
+        thumbUrl: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=900&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=2400&q=90'
+      },
+      {
+        id: 'wall-05',
+        title: 'Obsidian GT3 Midnight',
+        author: '@apex_spec',
+        category: 'Automotive',
+        aspectType: 'mobile',
+        aspectLabel: '9:16 HD+',
+        resolution: '1800×3200',
+        badge: 'MOBILE HD',
+        fileSize: '5.9 MB',
+        dominantTone: 'mono',
+        palette: ['#27272a', '#71717a', '#ef4444', '#09090b'],
+        tags: ['porsche', 'supercar', 'dark', 'automotive', 'night'],
+        thumbUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1800&q=90'
+      },
+      {
+        id: 'wall-06',
+        title: 'Solaris Dune Horizon',
+        author: '@studio_monolith',
+        category: 'Minimal',
+        aspectType: 'desktop',
+        aspectLabel: '16:9 UHD',
+        resolution: '3840×2160',
+        badge: '4K UHD',
+        fileSize: '7.1 MB',
+        dominantTone: 'orange',
+        palette: ['#f97316', '#fb923c', '#7c2d12', '#1c1917'],
+        tags: ['desert', 'dunes', 'minimal', 'warm', 'sunset'],
+        thumbUrl: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=900&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=2400&q=90'
+      },
+      {
+        id: 'wall-07',
+        title: 'Liquid Chrome Waves',
+        author: '@vortex_cgi',
+        category: 'Abstract 3D',
+        aspectType: 'ultrawide',
+        aspectLabel: '21:9 UWQHD',
+        resolution: '5120×2160',
+        badge: '5K ULTRAWIDE',
+        fileSize: '12.4 MB',
+        dominantTone: 'blue',
+        palette: ['#0ea5e9', '#38bdf8', '#1e293b', '#020617'],
+        tags: ['chrome', 'fluid', '3d render', 'blue', 'sleek'],
+        thumbUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=1000&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=2600&q=90'
+      },
+      {
+        id: 'wall-08',
+        title: 'Kyoto Neon Alleyway',
+        author: '@kenji_frames',
+        category: 'Cyberpunk',
+        aspectType: 'mobile',
+        aspectLabel: '9:16 OLED',
+        resolution: '2160×3840',
+        badge: 'MOBILE 4K',
+        fileSize: '7.5 MB',
+        dominantTone: 'orange',
+        palette: ['#f97316', '#e11d48', '#3b82f6', '#09090b'],
+        tags: ['japan', 'street', 'lanterns', 'cyberpunk', 'night'],
+        thumbUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1800&q=90'
+      },
+      {
+        id: 'wall-09',
+        title: 'Monolith Concrete Geometry',
+        author: '@arch_void',
+        category: 'Minimal',
+        aspectType: 'mobile',
+        aspectLabel: '9:16 HD+',
+        resolution: '1800×3200',
+        badge: 'MOBILE HD',
+        fileSize: '4.8 MB',
+        dominantTone: 'mono',
+        palette: ['#52525b', '#a1a1aa', '#27272a', '#09090b'],
+        tags: ['architecture', 'brutalist', 'shadow', 'minimal', 'monochrome'],
+        thumbUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1800&q=90'
+      },
+      {
+        id: 'wall-10',
+        title: 'Misty Emerald Pines',
+        author: '@wild_pacifica',
+        category: 'Nature',
+        aspectType: 'desktop',
+        aspectLabel: '16:9 UHD',
+        resolution: '3840×2160',
+        badge: '4K UHD',
+        fileSize: '10.3 MB',
+        dominantTone: 'emerald',
+        palette: ['#059669', '#34d399', '#1f2937', '#06110e'],
+        tags: ['forest', 'fog', 'emerald', 'trees', 'calm'],
+        thumbUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=900&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=2400&q=90'
+      },
+      {
+        id: 'wall-11',
+        title: 'Event Horizon Eclipse',
+        author: '@orbital_art',
+        category: 'Space',
+        aspectType: 'desktop',
+        aspectLabel: '16:9 UHD',
+        resolution: '3840×2160',
+        badge: '4K UHD',
+        fileSize: '6.4 MB',
+        dominantTone: 'orange',
+        palette: ['#ea580c', '#fbbf24', '#18181b', '#000000'],
+        tags: ['eclipse', 'sun', 'space', 'dark', 'amoled'],
+        thumbUrl: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?auto=format&fit=crop&w=900&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?auto=format&fit=crop&w=2400&q=90'
+      },
+      {
+        id: 'wall-12',
+        title: 'Tokyo Drift Skyline',
+        author: '@nitto_media',
+        category: 'Automotive',
+        aspectType: 'ultrawide',
+        aspectLabel: '21:9 UWQHD',
+        resolution: '5120×2160',
+        badge: '5K ULTRAWIDE',
+        fileSize: '11.8 MB',
+        dominantTone: 'purple',
+        palette: ['#9333ea', '#3b82f6', '#1e1b4b', '#09090b'],
+        tags: ['jdm', 'car', 'neon', 'highway', 'ultrawide'],
+        thumbUrl: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&w=1000&q=80',
+        fullUrl: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&w=2600&q=90'
+      }
+    ];
+
+    /**
+     * 2. APPLICATION STATE
+     */
+    const state = {
+      searchQuery: '',
+      category: 'All',
+      aspect: 'all',
+      color: 'all',
+      onlyFavorites: false,
+      favorites: new Set(JSON.parse(localStorage.getItem('aether_walls_favs') || '["wall-01", "wall-03"]')),
+      filteredWallpapers: [...WALLPAPERS_DATA],
+      activeModalIndex: -1,
+      mockupMode: 'clean' // 'clean' | 'desktop' | 'mobile'
+    };
+
+    /**
+     * 3. DOM ELEMENT REFERENCES
+     */
+    const dom = {
+      grid: document.getElementById('wallpaperGrid'),
+      emptyState: document.getElementById('emptyState'),
+      resultCount: document.getElementById('resultCount'),
+      searchInput: document.getElementById('searchInput'),
+      clearSearchBtn: document.getElementById('clearSearchBtn'),
+      categoryBar: document.getElementById('categoryBar'),
+      colorFilterBar: document.getElementById('colorFilterBar'),
+      aspectBtns: document.querySelectorAll('.aspect-btn'),
+      mobileAspectSelect: document.getElementById('mobileAspectSelect'),
+      favoritesToggleBtn: document.getElementById('favoritesToggleBtn'),
+      headerHeartIcon: document.getElementById('headerHeartIcon'),
+      favCountBadge: document.getElementById('favCountBadge'),
+      activeFilterBanner: document.getElementById('activeFilterBanner'),
+      activeFilterText: document.getElementById('activeFilterText'),
+      clearAllFiltersBtn: document.getElementById('clearAllFiltersBtn'),
+      emptyResetBtn: document.getElementById('emptyResetBtn'),
+      resetAllBrand: document.getElementById('resetAllBrand'),
+      // Modal Elements
+      modal: document.getElementById('lightboxModal'),
+      modalImage: document.getElementById('modalImage'),
+      previewFrame: document.getElementById('previewFrame'),
+      desktopOverlay: document.getElementById('desktopOverlay'),
+      mobileOverlay: document.getElementById('mobileOverlay'),
+      desktopClock: document.getElementById('desktopClock'),
+      phoneClock: document.getElementById('phoneClock'),
+      phoneDate: document.getElementById('phoneDate'),
+      mockupBtns: document.querySelectorAll('.mockup-btn'),
+      modalCategoryBadge: document.getElementById('modalCategoryBadge'),
+      modalTitle: document.getElementById('modalTitle'),
+      modalAuthor: document.getElementById('modalAuthor'),
+      modalResolution: document.getElementById('modalResolution'),
+      modalRatio: document.getElementById('modalRatio'),
+      modalSize: document.getElementById('modalSize'),
+      modalPalette: document.getElementById('modalPalette'),
+      modalTags: document.getElementById('modalTags'),
+      resolutionSelect: document.getElementById('resolutionSelect'),
+      modalDownloadBtn: document.getElementById('modalDownloadBtn'),
+      downloadBtnText: document.getElementById('downloadBtnText'),
+      modalFavBtn: document.getElementById('modalFavBtn'),
+      modalHeartSvg: document.getElementById('modalHeartSvg'),
+      prevWallBtn: document.getElementById('prevWallBtn'),
+      nextWallBtn: document.getElementById('nextWallBtn'),
+      closeModalDesktop: document.getElementById('closeModalDesktop'),
+      closeModalMobile: document.getElementById('closeModalMobile'),
+      toastContainer: document.getElementById('toastContainer')
+    };
+
+    /**
+     * 4. UTILITY FUNCTIONS (Toast, Clipboard, Live Clock, Persistence)
+     */
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const accentBorder = type === 'success' ? 'border-emerald-500/40' : 'border-violet-500/40';
+      const iconColor = type === 'success' ? 'text-emerald-400' : 'text-cyan-400';
+
+      toast.className = `pointer-events-auto glass-panel ${accentBorder} px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm text-white transform translate-y-3 opacity-0 transition-all duration-300`;
+      toast.innerHTML = `
+        <svg class="w-4 h-4 ${iconColor} shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>${message}</span>
+      `;
+
+      dom.toastContainer.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    function copyHexToClipboard(hex) {
+      const tempInput = document.createElement('input');
+      tempInput.value = hex;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast(`Copied color <span class="font-mono font-semibold text-cyan-300">${hex.toUpperCase()}</span> to clipboard`, 'success');
+      } catch (err) {
+        showToast(`Color code: ${hex.toUpperCase()}`);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function saveFavoritesToStorage() {
+      localStorage.setItem('aether_walls_favs', JSON.stringify([...state.favorites]));
+      updateFavoritesUI();
+    }
+
+    function updateFavoritesUI() {
+      dom.favCountBadge.textContent = state.favorites.size;
+      if (state.onlyFavorites) {
+        dom.favoritesToggleBtn.classList.add('active');
+        dom.headerHeartIcon.setAttribute('fill', 'currentColor');
+      } else {
+        dom.favoritesToggleBtn.classList.remove('active');
+        dom.headerHeartIcon.setAttribute('fill', 'none');
+      }
+    }
+
+    function updateLiveClocks() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${hours}:${mins}`;
+      
+      const dateStr = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      });
+
+      dom.desktopClock.textContent = timeStr;
+      dom.phoneClock.textContent = timeStr;
+      dom.phoneDate.textContent = dateStr;
+    }
+
+    /**
+     * 5. FILTERING & MASONRY GRID RENDERING ENGINE
+     */
+    function applyFilters() {
+      const q = state.searchQuery.trim().toLowerCase();
+
+      state.filteredWallpapers = WALLPAPERS_DATA.filter(wall => {
+        // Favorites filter
+        if (state.onlyFavorites && !state.favorites.has(wall.id)) return false;
+
+        // Category filter
+        if (state.category !== 'All' && wall.category !== state.category) return false;
+
+        // Aspect ratio filter
+        if (state.aspect !== 'all' && wall.aspectType !== state.aspect) return false;
+
+        // Color tone filter
+        if (state.color !== 'all' && wall.dominantTone !== state.color) return false;
+
+        // Live Search query (title, category, tags, author, badge)
+        if (q) {
+          const searchable = [
+            wall.title,
+            wall.category,
+            wall.author,
+            wall.badge,
+            wall.dominantTone,
+            ...wall.tags
+          ].join(' ').toLowerCase();
+
+          if (!searchable.includes(q)) return false;
+        }
+
+        return true;
+      });
+
+      renderGrid();
+      updateActiveFilterBanner();
+    }
+
+    function updateActiveFilterBanner() {
+      const hasFilters = state.onlyFavorites || state.searchQuery || state.category !== 'All' || state.aspect !== 'all' || state.color !== 'all';
+      if (hasFilters) {
+        const parts = [];
+        if (state.onlyFavorites) parts.push('Saved Collection');
+        if (state.category !== 'All') parts.push(`Category: ${state.category}`);
+        if (state.aspect !== 'all') parts.push(`Ratio: ${state.aspect.toUpperCase()}`);
+        if (state.color !== 'all') parts.push(`Tone: ${state.color.toUpperCase()}`);
+        if (state.searchQuery) parts.push(`Query: "${state.searchQuery}"`);
+
+        dom.activeFilterText.textContent = `Active Filters — ${parts.join(' • ')}`;
+        dom.activeFilterBanner.classList.remove('hidden');
+      } else {
+        dom.activeFilterBanner.classList.add('hidden');
+      }
+    }
+
+    function renderGrid() {
+      dom.resultCount.textContent = state.filteredWallpapers.length;
+
+      if (state.filteredWallpapers.length === 0) {
+        dom.grid.innerHTML = '';
+        dom.emptyState.classList.remove('hidden');
+        return;
+      }
+
+      dom.emptyState.classList.add('hidden');
+
+      dom.grid.innerHTML = state.filteredWallpapers.map((wall, idx) => {
+        const isFav = state.favorites.has(wall.id);
+        const delay = Math.min(idx * 45, 450); // Staggered entrance delay
+
+        return `
+          <article 
+            class="masonry-item animate-card-in" 
+            style="animation-delay: ${delay}ms"
+            data-id="${wall.id}"
+          >
+            <div class="wall-card group" onclick="openLightbox('${wall.id}')">
+              <!-- High-Res Wallpaper Thumbnail -->
+              <img 
+                src="${wall.thumbUrl}" 
+                alt="${wall.title}" 
+                loading="lazy"
+                onerror="this.src='https://placehold.co/800x600/121216/a1a1aa?text=${encodeURIComponent(wall.title)}'"
+              />
+
+              <!-- Glassmorphic Hover Micro-Interaction Overlay -->
+              <div class="wall-overlay">
+                <!-- Top Badges & Quick Favorite -->
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-cyan-300 border border-white/10">
+                    ${wall.badge}
+                  </span>
+
+                  <button 
+                    type="button"
+                    aria-label="Save Wallpaper"
+                    onclick="toggleFavorite(event, '${wall.id}')"
+                    class="w-9 h-9 rounded-xl bg-black/55 hover:bg-black/80 backdrop-blur-md border border-white/15 flex items-center justify-center transition-transform active:scale-90 ${isFav ? 'text-rose-500' : 'text-white/80 hover:text-white'}"
+                  >
+                    <svg class="w-4 h-4 ${isFav ? 'heart-pop' : ''}" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Bottom Info & One-Click Download -->
+                <div class="wall-overlay-bottom flex items-end justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="text-sm sm:text-base font-bold text-white truncate">${wall.title}</h3>
+                    <div class="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-300">
+                      <span class="truncate">${wall.author}</span>
+                      <span class="text-zinc-600">•</span>
+                      <span class="font-mono text-zinc-400">${wall.aspectLabel.split(' ')[0]}</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="button"
+                    title="Quick Download"
+                    onclick="triggerDownload(event, '${wall.id}')"
+                    class="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    /**
+     * 6. FAVORITE TOGGLE & DOWNLOAD SIMULATION
+     */
+    window.toggleFavorite = function(event, id) {
+      if (event) event.stopPropagation();
+
+      if (state.favorites.has(id)) {
+        state.favorites.delete(id);
+        showToast('Removed from Saved Wallpapers');
+      } else {
+        state.favorites.add(id);
+        showToast('Saved to your collection', 'success');
+      }
+
+      saveFavoritesToStorage();
+
+      // Re-render if viewing Saved collection, otherwise update icon in place
+      if (state.onlyFavorites) {
+        applyFilters();
+      } else {
+        renderGrid();
+      }
+
+      // Sync modal heart if open
+      if (state.activeModalIndex !== -1) {
+        const currentWall = state.filteredWallpapers[state.activeModalIndex];
+        if (currentWall && currentWall.id === id) {
+          updateModalFavoriteState(id);
+        }
+      }
+    };
+
+    window.triggerDownload = async function(event, id, customResLabel = null) {
+      if (event) event.stopPropagation();
+      const wall = WALLPAPERS_DATA.find(w => w.id === id);
+      if (!wall) return;
+
+      const resText = customResLabel || wall.badge;
+      showToast(`Preparing <span class="font-semibold text-white">${wall.title}</span> (${resText})...`);
+
+      // Animate modal download button if triggered from modal
+      if (event && event.currentTarget && event.currentTarget.id === 'modalDownloadBtn') {
+        dom.downloadBtnText.textContent = 'Downloading...';
+        dom.modalDownloadBtn.classList.add('opacity-80', 'pointer-events-none');
+      }
+
+      try {
+        // Attempt real blob fetch for smooth direct download
+        const response = await fetch(wall.fullUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `AETHER-${wall.title.toLowerCase().replace(/\s+/g, '-')}-${wall.resolution}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+
+        showToast(`Downloaded <span class="font-semibold text-emerald-300">${wall.title}</span>!`, 'success');
+      } catch (err) {
+        // Fallback if CORS blocks blob fetch: open high-res in new tab
+        window.open(wall.fullUrl, '_blank', 'noopener');
+        showToast(`Opened full-resolution master for <span class="font-semibold text-white">${wall.title}</span>`, 'success');
+      } finally {
+        if (dom.downloadBtnText) {
+          setTimeout(() => {
+            dom.downloadBtnText.textContent = 'Download Wallpaper';
+            dom.modalDownloadBtn.classList.remove('opacity-80', 'pointer-events-none');
+          }, 600);
+        }
+      }
+    };
+
+    /**
+     * 7. LIGHTBOX MODAL & DEVICE MOCKUP SWITCHER
+     */
+    window.openLightbox = function(id) {
+      const index = state.filteredWallpapers.findIndex(w => w.id === id);
+      if (index === -1) return;
+
+      state.activeModalIndex = index;
+      populateModal(state.filteredWallpapers[index]);
+      dom.modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+
+    function closeLightbox() {
+      dom.modal.classList.remove('open');
+      document.body.style.overflow = '';
+      state.activeModalIndex = -1;
+    }
+
+    function populateModal(wall) {
+      dom.modalImage.src = wall.fullUrl;
+      dom.modalCategoryBadge.textContent = wall.category;
+      dom.modalTitle.textContent = wall.title;
+      dom.modalAuthor.textContent = wall.author;
+      dom.modalResolution.textContent = wall.resolution;
+      dom.modalRatio.textContent = wall.aspectLabel;
+      dom.modalSize.textContent = wall.fileSize;
+
+      // Update Resolution Dropdown options dynamically
+      dom.resolutionSelect.innerHTML = `
+        <option value="original" class="bg-obsidian">Original Master — ${wall.badge} (${wall.resolution})</option>
+        <option value="qhd" class="bg-obsidian">QHD Desktop — 2K (2560×1440)</option>
+        <option value="mobile" class="bg-obsidian">Mobile Portrait Crop — (1440×3120)</option>
+      `;
+
+      // Render Clickable Color Palette Swatches
+      dom.modalPalette.innerHTML = wall.palette.map(hex => `
+        <button 
+          type="button"
+          onclick="copyHexToClipboard('${hex}')"
+          class="group flex flex-col items-center gap-1.5 p-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.07] transition"
+          title="Copy ${hex}"
+        >
+          <span class="w-full h-6 rounded-lg shadow-inner border border-white/15 group-hover:scale-[1.03] transition-transform" style="background-color: ${hex}"></span>
+          <span class="font-mono text-[10px] text-zinc-400 group-hover:text-white">${hex.toUpperCase()}</span>
+        </button>
+      `).join('');
+
+      // Render Tags
+      dom.modalTags.innerHTML = wall.tags.map(tag => `
+        <button 
+          type="button"
+          onclick="filterByTag('${tag}')"
+          class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-violet-500/20 text-zinc-300 hover:text-violet-200 border border-white/[0.07] transition"
+        >
+          #${tag}
+        </button>
+      `).join('');
+
+      updateModalFavoriteState(wall.id);
+      applyMockupMode(state.mockupMode);
+    }
+
+    function updateModalFavoriteState(id) {
+      const isFav = state.favorites.has(id);
+      if (isFav) {
+        dom.modalFavBtn.classList.add('text-rose-500', 'border-rose-500/40', 'bg-rose-500/10');
+        dom.modalHeartSvg.setAttribute('fill', 'currentColor');
+      } else {
+        dom.modalFavBtn.classList.remove('text-rose-500', 'border-rose-500/40', 'bg-rose-500/10');
+        dom.modalHeartSvg.setAttribute('fill', 'none');
+      }
+    }
+
+    function applyMockupMode(mode) {
+      state.mockupMode = mode;
+
+      // Update active button styling
+      dom.mockupBtns.forEach(btn => {
+        if (btn.dataset.mockup === mode) {
+          btn.classList.add('active', 'bg-white/15', 'text-white');
+          btn.classList.remove('text-zinc-400');
+        } else {
+          btn.classList.remove('active', 'bg-white/15', 'text-white');
+          btn.classList.add('text-zinc-400');
+        }
+      });
+
+      // Reset classes
+      dom.previewFrame.className = 'relative flex items-center justify-center transition-all duration-300';
+      dom.modalImage.className = 'transition-all duration-300';
+      dom.desktopOverlay.classList.add('hidden');
+      dom.mobileOverlay.classList.add('hidden');
+
+      if (mode === 'clean') {
+        dom.modalImage.classList.add('max-h-[58vh]', 'w-auto', 'object-contain', 'rounded-xl', 'shadow-2xl');
+      } else if (mode === 'desktop') {
+        dom.previewFrame.classList.add('mockup-desktop');
+        dom.modalImage.classList.add('w-full', 'h-full', 'object-cover');
+        dom.desktopOverlay.classList.remove('hidden');
+      } else if (mode === 'mobile') {
+        dom.previewFrame.classList.add('mockup-mobile');
+        dom.modalImage.classList.add('w-full', 'h-full', 'object-cover');
+        dom.mobileOverlay.classList.remove('hidden');
+      }
+    }
+
+    window.filterByTag = function(tag) {
+      closeLightbox();
+      state.searchQuery = tag;
+      dom.searchInput.value = tag;
+      dom.clearSearchBtn.classList.remove('hidden');
+      applyFilters();
+    };
+
+    function navigateModal(direction) {
+      if (state.activeModalIndex === -1 || state.filteredWallpapers.length === 0) return;
+      const total = state.filteredWallpapers.length;
+      state.activeModalIndex = (state.activeModalIndex + direction + total) % total;
+      populateModal(state.filteredWallpapers[state.activeModalIndex]);
+    }
+
+    function resetAllFilters() {
+      state.searchQuery = '';
+      state.category = 'All';
+      state.aspect = 'all';
+      state.color = 'all';
+      state.onlyFavorites = false;
+
+      dom.searchInput.value = '';
+      dom.clearSearchBtn.classList.add('hidden');
+      dom.mobileAspectSelect.value = 'all';
+
+      // Reset pills
+      document.querySelectorAll('.cat-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.category === 'All');
+        p.classList.toggle('text-zinc-300', p.dataset.category !== 'All');
+      });
+
+      dom.aspectBtns.forEach(b => {
+        const active = b.dataset.aspect === 'all';
+        b.classList.toggle('active', active);
+        b.classList.toggle('bg-white/10', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('text-zinc-400', !active);
+      });
+
+      document.querySelectorAll('.swatch-dot').forEach(s => {
+        s.classList.toggle('active', s.dataset.color === 'all');
+      });
+
+      updateFavoritesUI();
+      applyFilters();
+    }
+
+    /**
+     * 8. EVENT LISTENERS & INITIALIZATION
+     */
+    function initEventListeners() {
+      // Live Search Input
+      dom.searchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        dom.clearSearchBtn.classList.toggle('hidden', !state.searchQuery);
+        applyFilters();
+      });
+
+      dom.clearSearchBtn.addEventListener('click', () => {
+        state.searchQuery = '';
+        dom.searchInput.value = '';
+        dom.clearSearchBtn.classList.add('hidden');
+        dom.searchInput.focus();
+        applyFilters();
+      });
+
+      // Category Filter Pills
+      dom.categoryBar.addEventListener('click', (e) => {
+        const btn = e.target.closest('.cat-pill');
+        if (!btn) return;
+        state.category = btn.dataset.category;
+
+        document.querySelectorAll('.cat-pill').forEach(p => {
+          p.classList.remove('active');
+          p.classList.add('text-zinc-300');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('text-zinc-300');
+        applyFilters();
+      });
+
+      // Desktop Aspect Ratio Buttons
+      dom.aspectBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.aspect = btn.dataset.aspect;
+          dom.mobileAspectSelect.value = state.aspect;
+
+          dom.aspectBtns.forEach(b => {
+            b.classList.remove('active', 'bg-white/10', 'text-white', 'shadow-sm');
+            b.classList.add('text-zinc-400');
+          });
+          btn.classList.add('active', 'bg-white/10', 'text-white', 'shadow-sm');
+          btn.classList.remove('text-zinc-400');
+          applyFilters();
+        });
+      });
+
+      // Mobile Aspect Select
+      dom.mobileAspectSelect.addEventListener('change', (e) => {
+        state.aspect = e.target.value;
+        applyFilters();
+      });
+
+      // Color Swatch Dots
+      dom.colorFilterBar.addEventListener('click', (e) => {
+        const dot = e.target.closest('.swatch-dot');
+        if (!dot) return;
+        state.color = dot.dataset.color;
+
+        document.querySelectorAll('.swatch-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        applyFilters();
+      });
+
+      // Favorites Filter Toggle
+      dom.favoritesToggleBtn.addEventListener('click', () => {
+        state.onlyFavorites = !state.onlyFavorites;
+        updateFavoritesUI();
+        applyFilters();
+      });
+
+      // Reset Buttons
+      dom.clearAllFiltersBtn.addEventListener('click', resetAllFilters);
+      dom.emptyResetBtn.addEventListener('click', resetAllFilters);
+      dom.resetAllBrand.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetAllFilters();
+      });
+
+      // Lightbox Controls
+      dom.closeModalDesktop.addEventListener('click', closeLightbox);
+      dom.closeModalMobile.addEventListener('click', closeLightbox);
+      dom.modal.addEventListener('click', (e) => {
+        if (e.target === dom.modal) closeLightbox();
+      });
+
+      dom.prevWallBtn.addEventListener('click', () => navigateModal(-1));
+      dom.nextWallBtn.addEventListener('click', () => navigateModal(1));
+
+      // Device Mockup Mode Switcher
+      dom.mockupBtns.forEach(btn => {
+        btn.addEventListener('click', () => applyMockupMode(btn.dataset.mockup));
+      });
+
+      // Modal Favorite & Download Actions
+      dom.modalFavBtn.addEventListener('click', () => {
+        if (state.activeModalIndex === -1) return;
+        const wall = state.filteredWallpapers[state.activeModalIndex];
+        toggleFavorite(null, wall.id);
+      });
+
+      dom.modalDownloadBtn.addEventListener('click', (e) => {
+        if (state.activeModalIndex === -1) return;
+        const wall = state.filteredWallpapers[state.activeModalIndex];
+        const selectedOption = dom.resolutionSelect.options[dom.resolutionSelect.selectedIndex].text.split('—')[0].trim();
+        triggerDownload(e, wall.id, selectedOption);
+      });
+
+      // Global Keyboard Shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (state.activeModalIndex !== -1) {
+          if (e.key === 'Escape') closeLightbox();
+          if (e.key === 'ArrowLeft') navigateModal(-1);
+          if (e.key === 'ArrowRight') navigateModal(1);
+        } else if (e.key === 'Escape' && document.activeElement === dom.searchInput) {
+          dom.clearSearchBtn.click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      updateFavoritesUI();
+      updateLiveClocks();
+      setInterval(updateLiveClocks, 15000);
+      initEventListeners();
+      applyFilters();
+    });
+  </script>
+</body>
+</html>
